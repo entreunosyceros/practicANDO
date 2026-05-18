@@ -1,5 +1,7 @@
 # practicANDO
 
+<img width="1408" height="768" alt="practicAndo" src="https://github.com/user-attachments/assets/8d22ef72-7c14-42fe-b8fc-0d9e30f84557" />
+
 Menú interactivo en Bash para repasar y practicar los ejercicios de la UF de administración de sistemas. Cada ejercicio muestra el enunciado, la respuesta o los comandos, y —en los prácticos— permite ejecutarlos en la terminal con confirmación.
 
 ## Requisitos
