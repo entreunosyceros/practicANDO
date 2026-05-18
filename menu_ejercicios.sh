@@ -62,7 +62,7 @@ mostrar_practica() {
 # Pregunta si se desea ejecutar el bloque de comandos en la terminal
 preguntar_ejecucion() {
     local comando_bloque=$1
-    echo -e "\n${AMARILLO}¿Deseas ejecutar este comando en tu terminal para ver el resultado? (s/n):${RESET} "
+    echo -e "\n${AMARILLO}¿Quieres ejecutar este comando en tu terminal para ver el resultado? (s/n):${RESET} "
     read -r respuesta_ejecutar
     if [[ "$respuesta_ejecutar" =~ ^[Ss]$ ]]; then
         echo -e "\n${VERDE}--- EJECUTANDO COMANDO EN VIVO ---${RESET}"
@@ -73,7 +73,7 @@ preguntar_ejecucion() {
         fi
         echo -e "${VERDE}----------------------------------${RESET}"
     else
-        echo -e "\nEjecución cancelada. Puedes copiar los comandos y ejecutarlos manualmente."
+        echo -e "\nEjecución cancelada. También puedes copiar los comandos y ejecutarlos manualmente en otra terminal."
     fi
 }
 
@@ -145,7 +145,7 @@ ejercicio_27_seleccionar_disco() {
         case $op_part in
             1) ;;
             2)
-                echo -e "${AMARILLO}ATENCIÓN: se borrará la tabla de particiones de ${disco}.${RESET}"
+                echo -e "${AMARILLO}ATENCIÓN: ten claro que se borrará la tabla de particiones de ${disco}.${RESET}"
                 echo -n "¿Continuar? (s/n): "
                 read -r conf
                 [[ "$conf" =~ ^[Ss]$ ]] || { echo "Cancelado."; return 0; }
@@ -157,7 +157,7 @@ ejercicio_27_seleccionar_disco() {
             *) echo "Cancelado."; return 0 ;;
         esac
     else
-        echo -e "${AMARILLO}Se creará una partición primaria ext4 en ${disco} (${tam}).${RESET}"
+        echo -e "${AMARILLO}Se va a crear una partición primaria ext4 en ${disco} (${tam}).${RESET}"
         echo -n "¿Continuar? (s/n): "
         read -r conf
         [[ "$conf" =~ ^[Ss]$ ]] || { echo "Cancelado."; return 0; }
@@ -172,7 +172,7 @@ ejercicio_27_seleccionar_disco() {
         return 1
     fi
 
-    echo -n "¿Formatear ${part} como ext4? (borra datos existentes) (s/n): "
+    echo -n "¿Formatear ${part} como ext4? (esto borrará los datos existentes) (s/n): "
     read -r fmt
     if [[ "$fmt" =~ ^[Ss]$ ]]; then
         echo -e "${VERDE}Formateando ${part}...${RESET}"
