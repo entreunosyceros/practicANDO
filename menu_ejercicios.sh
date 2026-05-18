@@ -12,7 +12,7 @@ cabecera() {
     clear
     echo -e "${AZUL}======================================================================${RESET}"
     echo -e "${VERDE}                         practicANDO                               ${RESET}"
-    echo -e "${VERDE}                    Ejercicios interactivos                          ${RESET}"
+    echo -e "${VERDE}              MF0223_3 — Ejercicios interactivos                      ${RESET}"
     echo -e "${VERDE}                          con su CLI                                 ${RESET}"
     echo -e "${VERDE}                  creada por entreunosyceros                        ${RESET}"
     echo -e "${AZUL}======================================================================${RESET}"
@@ -91,6 +91,65 @@ ejercicio_27_primera_particion() {
     else
         echo "${disco}1"
     fi
+}
+
+# RAM: total del SO + cada banco DIMM (2×8 GB = 16 GB; no confundir una barra con el total)
+mostrar_ram_instalada() {
+    local mib total_free n_mod
+    mib=$(awk '/MemTotal:/ {printf "%.1f", $2/1024/1024}' /proc/meminfo 2>/dev/null)
+    total_free=$(free -h 2>/dev/null | awk '/^Mem:/ {print $2}')
+    echo "  Total que usa Linux: ${mib} GiB (free -h: ${total_free:-?})"
+    echo "  Bancos DIMM (sudo dmidecode -t 17):"
+    if ! sudo dmidecode -t 17 2>/dev/null | grep -q '^[[:space:]]*Size: [0-9]'; then
+        echo "  (Sin datos DMI. Usa: free -h)"
+        return
+    fi
+    n_mod=$(sudo dmidecode -t 17 2>/dev/null | awk '/^[[:space:]]+Size:/ && $2 ~ /^[0-9]/ { c++ } END { print c+0 }')
+    sudo dmidecode -t 17 2>/dev/null | awk '
+        /^Memory Device$/ { n++; if (n > 1) print ""; printf "  [DIMM %d]\n", n }
+        /^[[:space:]]+Size:/ && $2 ~ /^[0-9]/ { print }
+        /^[[:space:]]+Locator:/ { print }
+        /^[[:space:]]+Bank Locator:/ { print }
+        /^[[:space:]]+Type:/ && $2 !~ /Detail/ { print }
+    '
+    if (( n_mod >= 2 )); then
+        echo "  → ${n_mod} módulos instalados (p. ej. 2×8 GB = 16 GB; free -h muestra ~15 Gi por redondeo)."
+    fi
+}
+
+# Ejercicio 1: complemento en Linux para cada componente de placa base
+ejercicio_01_comandos() {
+    echo -e "[1) Procesador / zócalo]:"
+    sudo dmidecode -t processor 2>/dev/null | grep -E "Socket|Version|Upgrade" | head -n 5
+
+    echo -e "\n[2) Placa base y chipset]:"
+    sudo dmidecode -t baseboard 2>/dev/null | grep -E "Manufacturer|Product Name|Version"
+    lspci 2>/dev/null | grep -iE "LPC|chipset|ISA bridge" | head -n 3
+
+    echo -e "\n[3) Memoria RAM / bancos DIMM]:"
+    mostrar_ram_instalada
+
+    echo -e "\n[4) SATA (controlador y discos)]:"
+    sudo lspci 2>/dev/null | grep -iE "sata|ahci"
+    lsblk -d -o NAME,SIZE,TRAN,MODEL 2>/dev/null | grep -v loop | head -n 8
+
+    echo -e "\n[5) Ranuras PCIe]:"
+    sudo dmidecode -t slot 2>/dev/null | grep -E "Designation|Type" | head -n 6
+
+    echo -e "\n[6) Conector ATX]:"
+    if sudo dmidecode -t 39 2>/dev/null | grep -E "Max Power|Status" | head -n 4 | grep -q .; then
+        sudo dmidecode -t 39 2>/dev/null | grep -E "Max Power|Status" | head -n 4
+    else
+        echo "  No hay datos DMI de la fuente. Identifícalo en la placa: conector 24 pines ATX + 4/8 pines CPU."
+    fi
+
+    echo -e "\n[7) Panel trasero I/O]:"
+    echo "  USB:"
+    lsusb 2>/dev/null | head -n 6
+    echo "  Red:"
+    ip -br link show 2>/dev/null | grep -v "^lo" || true
+    echo "  Vídeo / audio / red (lspci):"
+    lspci 2>/dev/null | grep -iE "VGA|3D|Ethernet|Audio" | head -n 6
 }
 
 # Ejercicio 27: lista discos con lsblk y deja elegir cuál particionar y montar
@@ -212,9 +271,9 @@ bloque1() {
             1)
                 mostrar_teoria \
                     "A partir de una imagen o manual de placa base, identifica y nombra al menos: zócalo del procesador, bancos DIMM, chipset, puertos SATA, ranuras PCIe, conector ATX de alimentación y panel trasero." \
-                    "• Zócalo del procesador (socket): donde se inserta la CPU (ej. LGA1700, AM5).\n• Bancos DIMM: ranuras para módulos de memoria RAM.\n• Chipset: circuitos que gestionan E/S, PCIe y comunicación CPU-periféricos.\n• Puertos SATA: conexión de discos ópticos/HDD/SSD internos.\n• Ranuras PCIe: expansión (gráfica, red, NVMe en algunas placas).\n• Conector ATX (24 pines + 4/8 pines CPU): alimentación desde la fuente.\n• Panel trasero (I/O shield): USB, audio, red, vídeo integrados hacia el exterior del chasis.\n\n${AMARILLO}Complemento opcional en Linux:${RESET} dmidecode muestra datos detectados del hardware (no sustituye identificar la placa en un manual/imagen)." \
-                    "# Procesador (zócalo / modelo detectado)\nsudo dmidecode -t processor | grep -E \"Version|Upgrade\" | head -n 4\n\n# Memoria RAM (bancos DIMM ocupados)\nsudo dmidecode -t memory | grep -E \"Size|Locator|Type:\" | grep -v \"No Module\" | head -n 8\n\n# Ranuras de expansión PCIe\nsudo dmidecode -t slot | grep -E \"Designation|Type\" | head -n 6" \
-                    'echo -e "[Procesador]:"; sudo dmidecode -t processor 2>/dev/null | grep -E "Version|Upgrade" | head -n 4; echo -e "\n[Memoria DIMM]:"; sudo dmidecode -t memory 2>/dev/null | grep -E "Size|Locator|Type:" | grep -v "No Module" | head -n 8; echo -e "\n[Ranuras PCIe]:"; sudo dmidecode -t slot 2>/dev/null | grep -E "Designation|Type" | head -n 6'
+                    "• Zócalo del procesador (socket): donde se inserta la CPU (ej. LGA1700, AM5).\n• Bancos DIMM: ranuras para módulos de memoria RAM.\n• Chipset: circuitos que gestionan E/S, PCIe y comunicación CPU-periféricos.\n• Puertos SATA: conexión de discos ópticos/HDD/SSD internos.\n• Ranuras PCIe: expansión (gráfica, red, NVMe en algunas placas).\n• Conector ATX (24 pines + 4/8 pines CPU): alimentación desde la fuente.\n• Panel trasero (I/O shield): USB, audio, red, vídeo integrados hacia el exterior del chasis.\n\n${AMARILLO}Complemento opcional en Linux:${RESET} los comandos siguientes muestran datos que el SO detecta (dmidecode, lspci, lsblk, lsusb). No sustituyen identificar la placa en un manual o imagen; el conector ATX solo se reconoce a simple vista en la placa." \
+                    "# 1) Procesador (zócalo / modelo)\nsudo dmidecode -t processor | grep -E \"Socket|Version|Upgrade\" | head -n 5\n\n# 2) Placa base y chipset\nsudo dmidecode -t baseboard | grep -E \"Manufacturer|Product Name|Version\"\nlspci | grep -iE \"LPC|chipset|ISA bridge\" | head -n 3\n\n# 3) Memoria RAM: total del SO + cada banco DIMM (sin líneas Volatile/Cache Size)\nfree -h\nsudo dmidecode -t 17 | awk '/^Memory Device$/{n++;if(n>1)print\"\";printf \"[DIMM %d]\\n\",n} /^[[:space:]]+Size:/&&$2~/^[0-9]/{print} /^[[:space:]]+Locator:/{print} /^[[:space:]]+Bank Locator:/{print} /^[[:space:]]+Type:/&&$2!~/Detail/{print}'\n\n# 4) Puertos SATA (controlador y discos)\nsudo lspci | grep -iE \"sata|ahci\"\nlsblk -d -o NAME,SIZE,TRAN,MODEL | grep -v loop\n\n# 5) Ranuras PCIe\nsudo dmidecode -t slot | grep -E \"Designation|Type\" | head -n 6\n\n# 6) Conector ATX (solo físico; DMI a veces muestra fuente)\nsudo dmidecode -t 39 2>/dev/null | grep -E \"Max Power|Status\" | head -n 4\n# Si no hay salida: localizar en la placa el conector 24 pines + 4/8 pines CPU\n\n# 7) Panel trasero I/O (periféricos que el SO ve)\nlsusb | head -n 6\nip -br link show | grep -v \"^lo\"\nlspci | grep -iE \"VGA|3D|Ethernet|Audio\" | head -n 6" \
+                    'ejercicio_01_comandos'
                 pausa ;;
             2)
                 mostrar_teoria \
@@ -506,7 +565,11 @@ while true; do
         5) bloque5 ;;
         6) bloque6 ;;
         0)
-            echo -e "\n${VERDE}Saliendo de practicANDO. ¡Buen trabajo!${RESET}"
+            if [[ -n "${CHULETARIO:-}" ]]; then
+                echo -e "\n${VERDE}Volviendo a Chuletario...${RESET}"
+            else
+                echo -e "\n${VERDE}Saliendo de practicANDO. ¡Buen trabajo!${RESET}"
+            fi
             exit 0
             ;;
         *)
